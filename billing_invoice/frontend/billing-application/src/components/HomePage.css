@@ -9,7 +9,11 @@
     width: 210vh;
     background-size: cover;
     background-position: center;
+<<<<<<< HEAD
     background-image: url('./sn tech.jpg'); /* Update this path */
+=======
+    background-image: url('D:/Billing App/billing-application/frontend/billing-application/src/components/sn tech.jpg'); /* Update this path */
+>>>>>>> a6807acc47b321a371bb48331cd1a2f93ee2a754
 }
 
 .header, .footer {
