@@ -10,6 +10,7 @@
     background-size: cover;
     background-position: center;
     background-image: url('./sn tech.jpg'); /* Update this path */
+}
 
 .header, .footer {
     width: 100%;
