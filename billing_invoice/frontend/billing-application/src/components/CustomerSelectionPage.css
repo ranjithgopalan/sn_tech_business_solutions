@@ -1,0 +1,140 @@
+/* CustomerSelectionPage.css */
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #151fd080;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.container {
+    display: grid;
+    grid-template-areas: 
+        "header header header"
+        "customer product cart";
+    gap: 30px;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(209, 193, 193, 0.763);
+    max-width: 1200px;
+    margin: 2px auto;
+    
+}
+
+header {
+    grid-area: header;
+    background-color: #300564;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    font-size: 1.5em;
+    border-radius: 5px;
+}
+
+.customer-details {
+    grid-area: customer;
+}
+
+.product-details {
+    grid-area: product;
+}
+
+.cart-items {
+    grid-area: cart;
+}
+
+/* Card-like appearance for each section */
+.customer-details, .product-details, .cart-items {
+    background-color: #ffffff;
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+}
+
+/* Form groups within each section */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group select,
+.form-group input {
+    padding: 10px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.button-group {
+    text-align: right;
+    margin-top: 20px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* Additional styles for better UI */
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #a46416;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+label {
+    font-size: 14px;
+    color: #555555;
+}
+
+.form-group input::placeholder,
+.form-group select::placeholder {
+    color: #af191922;
+    opacity: 1;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table, th, td {
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+}
+
+th {
+    background-color: #005f6b;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f4f4f9;
+}
+
+.table-actions {
+    text-align: right;
+}
