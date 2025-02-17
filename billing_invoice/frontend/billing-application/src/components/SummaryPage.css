@@ -1,0 +1,60 @@
+/* SummaryPage.css */
+
+.summary-page {
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 5px;
+}
+
+.summary-page h1,
+.container h2 {
+    color: #333;
+    font-size: 1em;
+    margin-bottom: 10px;
+}
+
+.summary-table {
+
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.summary-table th,
+.summary-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+.summary-table th,
+.product-table th {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.summary-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.summary-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+button {
+    background-color: #5b37ef;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #5f00b3;
+}

@@ -1,0 +1,91 @@
+/* CartListPage.css */
+
+.container {
+    /* display: flex;
+    
+    
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    
+    /* background-color: #e5eae4; */
+    /* margin: 20px;
+    padding: 20px; */
+    flex-direction: column;
+    align-items: center;
+}
+
+.table-container {
+    max-height: 300px; /* Set the desired height for the scrollable area */
+    overflow-y: auto; /* Enable vertical scrolling */
+    border: 1px solid #ccc; /* Optional: Add a border for better visibility */
+}
+
+.container h2 {
+    color: #333;
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+.product-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.product-table th,.product-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    
+}
+
+.product-table th {
+    background-color: #f2f2f2;
+}
+
+.product-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-row td {
+    flex: 1;
+    text-align: center;
+}
+
+/* thead th { background-color: #f2f2f2; position: sticky; top: 0; z-index: 1; } */
+
+.product-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.product-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+button {
+    background-color: #ff002b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* .totals {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    margin-top: 20px;
+} */

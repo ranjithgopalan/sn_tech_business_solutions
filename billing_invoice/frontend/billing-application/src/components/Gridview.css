@@ -1,0 +1,80 @@
+/* ProductDetailsPage.css */
+
+.grid-container {
+    display: grid; /* Use grid layout */
+    grid-template-columns: 200px 250px;  /* Ensure the columns are correctly separated */
+    /* grid-auto-rows: minmax(150px, auto); Adjust the rows as needed */
+    grid-row-gap: 20px;
+    /* grid-template-rows: repeat(2, 1fr); Ensure the rows have the correct 'fr' unit without a comma */
+    gap: 10px; /* Adjust the gap as needed */
+    /* padding: 5px; Optional padding for the container */
+    background-color: #efe8e8;
+    border-radius: 10px; /* Adjust border-radius for better visual appearance */
+    height: 100vh;
+    grid-template-areas:
+        "header header"
+        "sidebar main"
+        "footer footer";
+}
+
+
+/* .form-group-customer1 {
+    grid-area: header; /* Assign the grid area to the header */
+    /* background-color: #e8f0e8; */
+    /* padding: 20px; Adjusted padding for consistency */
+    /* margin: 10px; Normalize margins */
+    /* border-radius: 10px; */
+/* } */ 
+
+
+/* .form-group-customer { */
+    /* display: flex; */
+    /* justify-content: center; */
+    /* align-items:  center; */
+    /* border: 1px solid #ccc; */
+    /* background-color: #f9f9f9; */
+    /* font-size: 1.5em; */
+    /* color: #333; */
+  /* } */
+
+  /* @media (max-width: 600px) {
+    .form-group-customer {
+        grid-template-columns: 1fr; /* 1 column on smaller screens */
+        /* grid-template-rows: repeat(4, 1fr); */
+    /* } */
+  /* } */
+
+.form-group-customer select {
+    width: 100%; 
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px; 
+    background-color: white;
+    font-size: 14px; 
+    color: #333; 
+    box-sizing: border-box; 
+    -webkit-appearance: none; /* Remove default arrow for better customization */ 
+    -moz-appearance: none; 
+    appearance: none; 
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="black" d="M2 0L0 2h4z"/></svg>'); /* Custom arrow */
+    background-repeat: no-repeat; 
+    background-position: right 10px center;
+    background-size: 10px 10px; 
+} 
+
+.form-group-products {
+    grid-column: 3 / 4;
+    background-color: #f4f3f5;
+    padding: 20px; 
+    margin-left: 30px;
+    margin: 10px; /* Normalize margins */
+    border-radius: 20px;
+}
+
+.product-table {
+    grid-column: 2 / 3;
+    background-color: #e8f0e8; 
+    padding: 20px; /* Adjusted padding */
+    margin: 10px; /* Normalize margins */
+    border-radius: 20px; 
+}
