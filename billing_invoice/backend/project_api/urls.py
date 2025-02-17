@@ -16,22 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from app_api_customer.views import  customer_id_list, check_customer_details,create_product, check_product_details,get_products_by_user,save_summary,get_bills,get_customer_by_name,customer_detail,search_customers,create_product2
+from app_api_customer.views import  customer_id_list, check_customer_details,create_product, check_product_details,get_products_by_user,save_summary,get_bills,get_customer_by_name,customer_detail,search_customers,create_product2,AddCustomer
+from rest_framework import routers
+router = routers.DefaultRouter()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('', include(router.urls)),
+    path('', include(router.urls)),
     path('api/check-customer-details/',check_customer_details, name='check-customer-details'),
-    # path('customers/<int:pk>/',customer_detail,name='customer-detail'),
     path('api/search-customers/', search_customers, name='search-customers'),
     path('api/customer-ids/<int:pk>/', customer_id_list, name='customer-ids'),
     path('api/customer-by-name/', get_customer_by_name, name='customer-by-name'),
     path('api/create-product/',create_product, name='create-product'),
     path('api/create-product2/',create_product2, name='create-product2'),
     path('api/check-product-details/',check_product_details, name='check-product-details'),
-    #for getting products for a user
     path('api/get-products-by-user/', get_products_by_user, name='get-products-by-user'),
     path('api/save-summary/', save_summary, name='save-summary'),
     path('api/bills/', get_bills, name='get-bills'),
-    # path('customer-ids/', CustomerIDListView.as_view(), name='customer-ids'),
+    path('api/AddCustomer/',AddCustomer, name ='AddCustomer')
+
 ]

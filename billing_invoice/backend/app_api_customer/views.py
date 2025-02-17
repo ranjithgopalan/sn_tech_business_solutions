@@ -1,3 +1,4 @@
+import json
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -7,12 +8,45 @@ from .serializers import CustomerSerializer, CartSerializer, CartItemSerializer,
 from datetime import datetime
 from .models import Customer
 from django.db import IntegrityError
+from django.http import JsonResponse
+import io
+import logging
+from app_api_customer.logging_config import setup_logging
+from django.db.models import Q
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
     # To validate the customer details
+
+@api_view(['POST'])
+def AddCustomer(request):
+    logger = setup_logging('POST', 'AddCustomer')
+    try:
+        data = json.loads(request.body)
+        customerName = data['customerName']
+        email = data['email']
+        phone_number = data['phone_number']
+        address = data['address']
+        gstin = data['gstin']
+
+        if Customer.objects.filter(Q(phone_number=phone_number) | Q(email=email) | Q(gstin=gstin)).exists():
+            logger.info(f"Customer already exists: {customerName}")
+            return JsonResponse({'message': 'Customer already exists', 'customer_name': customerName}, status=200)
+        else:
+            customer = Customer.objects.create(
+                customerName=customerName,
+                email=email,
+                phone_number=phone_number,
+                address=address,
+                gstin=gstin
+            )
+            logger.info(f"Customer added successfully: {customerName}")
+            return JsonResponse({'message': 'Customer added successfully', 'customer_name': customerName}, status=200)
+    except Exception as e:
+        logger.info(f"Customer not added successfully: {str(e)}")
+        return JsonResponse({'message': f'Customer not added successfully because of {str(e)}'}, status=400)
 
 @api_view(['GET'])
 def search_customers(request):

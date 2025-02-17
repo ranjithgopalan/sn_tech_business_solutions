@@ -80,12 +80,9 @@ const Dashboard = () => {
         };
 
         try {
-            const response = await axios.post('http://localhost:8000/api/customers/', customerDetails);
-            console.log('Customer Details Saved:', response.data);
-            setSuccess('Customer details saved successfully!');
-            // Navigate('/home');
-            setError('');
-            alert('Customer details saved successfully!');
+            const response = await axios.post('http://localhost:8000/api/AddCustomer/', customerDetails);
+            console.log( response.data.message);        
+            setSuccess( response.data.message);
             setFormData({
                 customerName: '',
                 email: '',
@@ -94,20 +91,13 @@ const Dashboard = () => {
                 gstin: ''
             });   
         } catch (err) {
-            if (err.response) {
-                console.error('Error response:', err.response.data);
-                setError(`Failed to save customer details: ${err.response.data.detail || err.response.statusText}`);
-            } else if (err.request) {
-                console.error('Error request:', err.request);
-                setError('Failed to save customer details: No response received from server.');
-            } else {
+     
                 console.error('Error message:', err.message);
                 setError(`Failed to save customer details: ${err.message}`);
             }
-            setSuccess('');
             
-        }
-    };
+            
+    }
 
     return (
         <div className="dashboard">
