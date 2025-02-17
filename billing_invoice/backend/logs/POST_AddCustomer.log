@@ -1,0 +1,50 @@
+2025-02-17 13:13:06 - INFO - Customer added successfully: 1
+2025-02-17 13:15:42 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-17 13:24:53 - INFO - Customer  is added successfully: ('Ranjith Gopalan',)
+2025-02-17 13:26:02 - INFO - Customer is NOT added successfully: duplicate key value violates unique constraint "app_api_customer_customer_phone_number_key"
+DETAIL:  Key (phone_number)=(5025338073) already exists.
+
+2025-02-17 13:26:02 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:31:01 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-17 13:36:29 - INFO - Customer is NOT added successfully: duplicate key value violates unique constraint "app_api_customer_customer_phone_number_key"
+DETAIL:  Key (phone_number)=(5025338073) already exists.
+
+2025-02-17 13:36:29 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:43:03 - INFO - Customer is NOT added successfully: duplicate key value violates unique constraint "app_api_customer_customer_phone_number_key"
+DETAIL:  Key (phone_number)=(5025338073) already exists.
+
+2025-02-17 13:43:03 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:43:05 - INFO - Customer is NOT added successfully: duplicate key value violates unique constraint "app_api_customer_customer_phone_number_key"
+DETAIL:  Key (phone_number)=(5025338073) already exists.
+
+2025-02-17 13:43:05 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:43:12 - INFO - Customer is NOT added successfully: duplicate key value violates unique constraint "app_api_customer_customer_phone_number_key"
+DETAIL:  Key (phone_number)=(5025338073) already exists.
+
+2025-02-17 13:43:12 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:46:42 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-17 13:47:06 - INFO - Customer is NOT added successfully: cannot unpack non-iterable bool object
+2025-02-17 13:47:06 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:47:12 - INFO - Customer is NOT added successfully: cannot unpack non-iterable bool object
+2025-02-17 13:47:12 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 13:47:58 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-17 13:53:37 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 13:53:44 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 13:57:52 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 13:58:17 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 13:59:13 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:00:03 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:00:29 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:02:10 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:02:40 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:03:49 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:04:05 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:04:10 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:04:18 - INFO - Customer not added successfully: duplicate key value violates unique constraint "app_api_customer_customer_gstin_key"
+DETAIL:  Key (gstin)=(12435267) already exists.
+
+2025-02-17 14:04:18 - WARNING - Bad Request: /api/AddCustomer/
+2025-02-17 14:05:58 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-17 14:06:36 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:06:51 - INFO - Customer already exists: Dr. Ranjith Gopalan
+2025-02-17 14:08:15 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\project_api\urls.py changed, reloading.
