@@ -1,37 +1,51 @@
-import React, { useState,useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
+import { Package, PlusCircle } from 'lucide-react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import './Gridview.css';
 
-const ProductDetailsPage = ({ invoiceNumber, customerId,invoiceDate, onAddProduct }) => {
+const ProductDetailsPage = ({ customerId, invoiceNumber, invoiceDate, onAddProduct,setProducts }) => {
     const [productName, setProductName] = useState('');
     const [quantity, setQuantity] = useState('');
     const [perQuantityRate, setPerQuantityRate] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
 
-    const userId = customerId;
-
+    // Calculate total amount when quantity or rate changes
     useEffect(() => {
-      setTotalAmount(quantity * perQuantityRate);
-  }, [quantity, perQuantityRate]);
-
+        const qty = Number(quantity) || 0;
+        const rate = Number(perQuantityRate) || 0;
+        setTotalAmount(qty * rate);
+    }, [quantity, perQuantityRate]);
 
     const validateFields = () => {
-        if (!productName) {
+        setError('');
+
+        if (!productName || productName.trim() === '') {
             setError('Product name is required');
             return false;
         }
-        if (!quantity || isNaN(quantity) || quantity <= 0) {
+
+        const parsedQuantity = Number(quantity);
+        if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
             setError('Quantity must be a positive number');
             return false;
         }
-        if (!perQuantityRate || isNaN(perQuantityRate) || perQuantityRate <= 0) {
+
+        const parsedRate = Number(perQuantityRate);
+        if (isNaN(parsedRate) || parsedRate <= 0) {
             setError('Per quantity rate must be a positive number');
             return false;
         }
+
         return true;
+    };
+
+    const clearForm = () => {
+        setProductName('');
+        setQuantity('');
+        setPerQuantityRate('');
+        setTotalAmount('');
+        setError('');
     };
 
     const handleAddToCart = async () => {
@@ -39,100 +53,258 @@ const ProductDetailsPage = ({ invoiceNumber, customerId,invoiceDate, onAddProduc
             return;
         }
 
+        if (!customerId) {
+            setError('Please select a customer first');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
         try {
-            const response = await axios.post('http://localhost:8000/api/create-product2/', {
-                invoice_number: invoiceNumber,
-                invoice_date: invoiceDate,
-                product_name: productName,
-                product_price: perQuantityRate,
-                product_quantity: quantity,
-                total_amount: totalAmount,
-                user_id : Number(userId),
-            });
-            onAddProduct(response.data);
-            setProductName('');
-            setQuantity('');
-            setPerQuantityRate('');
-            setTotalAmount('');
-            setError('');
-            alert('Product added successfully'); // Show alert box
-            navigate('/'); // Navigate to homepage after adding product to cart
+            // First create the product
+            const productData = {
+                customer_id: customerId,
+                product_name: productName.trim(),
+                product_quantity: Number(quantity),
+                product_price: Number(perQuantityRate),
+                total_amount: Number(totalAmount)
+            };
+            console.log('Sending to API:', productData);
+
+            const response = await axios.post(
+                'http://localhost:8000/api/create-product/', 
+                productData
+            );
+
+            // Then get updated products list
+            const updatedProductsResponse = await axios.get(
+                'http://localhost:8000/api/get-products-by-user/',
+                {
+                    params: { user_id: customerId }
+                }
+            );
+
+            if (typeof onAddProduct === 'function') {
+                onAddProduct(updatedProductsResponse.data);
+            }
+            
+            // Also update products state if the function is passed
+            if (typeof setProducts === 'function') {
+                setProducts(updatedProductsResponse.data);
+            }
+
+            // Update cart and clear form
+            // onProductAdded(updatedProductsResponse.data);
+            // setProducts(updatedProductsResponse.data);
+            clearForm();
+            alert('Product added to cart successfully');
+
         } catch (error) {
-            console.error('Error adding product to cart:', error);
-            setError('Failed to add product to cart');
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            
+            if (error.response?.data?.message) {
+                setError(error.response.data.message);
+            } else {
+                setError('Failed to add product. Please try again.');
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-      <div className="product-details-page" style={{
-        maxWidth: '800px',
-        margin: '20px auto',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h3 style={{ textAlign: 'center', color: '#333', fontSize: '24px', marginBottom: '16px' }}>Product Details</h3>
-        {error && <p style={{ color: 'red', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>}
-        
-        {/* Labels Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '10px', fontWeight: 'bold', color: '#555' }}>
-          <label style={labelStyle}>Product Name:</label>
-          <label style={labelStyle}>Quantity:</label>
-          <label style={labelStyle}>Per Quantity Rate:</label>
-          <label style={labelStyle}>Total Amount:</label>
-        </div>
-        
-        {/* Input Fields Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
-          <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} style={inputStyle} />
-          <input type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} style={inputStyle} />
-          <input type="number" value={perQuantityRate} onChange={(e) => setPerQuantityRate(Number(e.target.value))} style={inputStyle} />
-          <input type="number" value={totalAmount} readOnly style={{ ...inputStyle, backgroundColor: '#e0e0e0' }} />
-        </div>
-        
-        {/* Add to Cart Button */}
-        <div style={{ textAlign: 'center' }}>
-          <button type="button" onClick={handleAddToCart} style={buttonStyle}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#005a4c'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#00796b'}
-          >
-            Add to Cart
-          </button>
-        </div>
+        <div style={styles.container}>
+            {/* <div style={styles.header}>
+                <Package size={30} color="#00796b" />
+                <h3 style={styles.title}>Product Details</h3>
+            </div> */}
+
+            {error && (
+                <div style={styles.errorMessage}>
+                    {error}
+                </div>
+            )}
+
+            <div style={styles.gridContainer}>
+                <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Product Name</label>
+                    <input 
+                        type="text" 
+                        value={productName} 
+                        onChange={(e) => setProductName(e.target.value)} 
+                        style={styles.input(isLoading || !customerId)} 
+                        placeholder="Enter Product Name"
+                        disabled={isLoading || !customerId}
+                    />
+                </div>
+
+                <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Quantity</label>
+                    <input 
+                        type="number" 
+                        value={quantity} 
+                        onChange={(e) => setQuantity(e.target.value)} 
+                        style={styles.input(isLoading || !customerId)} 
+                        placeholder="Quantity"
+                        min="1"
+                        disabled={isLoading || !customerId}
+                    />
+                </div>
+
+                <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Per Quantity Rate</label>
+                    <input 
+                        type="number" 
+                        value={perQuantityRate} 
+                        onChange={(e) => setPerQuantityRate(e.target.value)} 
+                        style={styles.input(isLoading || !customerId)} 
+                        placeholder="Rate"
+                        min="0.01"
+                        step="0.01"
+                        disabled={isLoading || !customerId}
+                    />
+                </div>
+
+                <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Total Amount</label>
+                    <input 
+                        type="number" 
+                        value={totalAmount} 
+                        readOnly 
+                        style={styles.totalAmountInput} 
+                    />
+                </div>
             </div>
-        );
-      };
-      
-      // Styles
-      const inputStyle = {
-        padding: '10px',
-        width: '100%',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
+
+            <div style={styles.buttonWrapper}>
+                <button 
+                    onClick={handleAddToCart} 
+                    style={styles.button(isLoading || !customerId)}
+                    disabled={isLoading || !customerId}
+                >
+                    {isLoading ? (
+                        <span style={styles.buttonContent}>
+                            <div style={styles.spinner}></div>
+                            Adding...
+                        </span>
+                    ) : (
+                        <span style={styles.buttonContent}>
+                            <PlusCircle size={20} />
+                            Add to Cart
+                        </span>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const styles = {
+    container: {
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '25px',
+        boxShadow: '0 6px 15px rgba(0, 0, 0, 0.08)',
+        border: '1px solid #e9ecef'
+    },
+    header: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '20px',
+        paddingBottom: '12px',
+        borderBottom: '2px solid #00796b'
+    },
+    title: {
+        margin: 0,
+        color: '#2c3e50',
+        fontSize: '20px',
+        fontWeight: '600'
+    },
+    errorMessage: {
+        backgroundColor: '#ffebee',
+        color: '#d32f2f',
+        padding: '12px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: '600'
+    },
+    gridContainer: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '15px',
+        marginBottom: '20px'
+    },
+    inputWrapper: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+    },
+    label: {
         fontSize: '14px',
-        transition: 'border-color 0.3s ease',
+        fontWeight: '600',
+        color: '#34495e'
+    },
+    input: (disabled) => ({
+        padding: '12px 15px',
+        borderRadius: '8px',
+        border: '2px solid #e0e0e0',
+        fontSize: '15px',
+        backgroundColor: disabled ? '#f0f0f0' : '#ffffff',
+        color: disabled ? '#9e9e9e' : '#333',
+        cursor: disabled ? 'not-allowed' : 'text',
+        transition: 'all 0.3s ease',
         outline: 'none'
-      };
-      
-      const labelStyle = {
-        textAlign: 'center',
-        display: 'block',
-        width: '100%'
-      };
-      
-      const buttonStyle = {
-        padding: '10px 20px',
-        backgroundColor: '#00796b',
+    }),
+    totalAmountInput: {
+        padding: '12px 15px',
+        borderRadius: '8px',
+        border: '2px solid #e0e0e0',
+        fontSize: '15px',
+        backgroundColor: '#f0f0f0',
+        color: '#333',
+        cursor: 'not-allowed'
+    },
+    buttonWrapper: {
+        display: 'flex',
+        justifyContent: 'center',
+        marginTop: '20px'
+    },
+    button: (disabled) => ({
+        padding: '12px 25px',
+        borderRadius: '8px',
+        backgroundColor: disabled ? '#cccccc' : '#00796b',
         color: 'white',
         border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontSize: '16px',
-        transition: 'background-color 0.3s ease'
-      };
-      
-  
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.3s ease',
+        fontWeight: '600'
+    }),
+    buttonContent: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+    },
+    spinner: {
+        border: '3px solid rgba(255, 255, 255, 0.3)',
+        borderTop: '3px solid white',
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        animation: 'spin 1s linear infinite'
+    }
+};
 
 export default ProductDetailsPage;

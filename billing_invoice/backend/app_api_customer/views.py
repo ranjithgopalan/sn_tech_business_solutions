@@ -5,21 +5,18 @@ from rest_framework.decorators import api_view
 from rest_framework.views import APIView  # Import APIView
 from .models import Customer, Cart, CartItem, Product,Summary
 from .serializers import CustomerSerializer, CartSerializer, CartItemSerializer,ProductSerializer
-from datetime import datetime
-from .models import Customer
-from django.db import IntegrityError
+from datetime import datetime,date
+from .models import Customer,Invoice,Product
+from django.db import IntegrityError, models
 from django.http import JsonResponse
 import io
 import logging
 from app_api_customer.logging_config import setup_logging
 from django.db.models import Q
 
-class CustomerViewSet(viewsets.ModelViewSet):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
+
 
     # To validate the customer details
-
 @api_view(['POST'])
 def AddCustomer(request):
     logger = setup_logging('POST', 'AddCustomer')
@@ -57,24 +54,42 @@ def search_customers(request):
         return Response(customer_list, status=status.HTTP_200_OK)
     return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-def check_customer_details(request):
-    email = request.data.get('email')
-    phone_number = request.data.get('phone_number')
-    gstin = request.data.get('gstin')
+@api_view(['GET'])
+def get_customer_details(request):
+    try:
+        customer_id = request.GET.get('customer_id')
+        customerName = request.GET.get('customerName')
+        email = request.GET.get('email')
+        phone_number = request.GET.get('phone_number')
+        gstin = request.GET.get('gstin')
 
-    if Customer.objects.filter(email=email).exists():
-        return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-    if Customer.objects.filter(phone_number=phone_number).exists():
-        return Response({'error': 'Phone number already exists'}, status=status.HTTP_400_BAD_REQUEST)
-    if Customer.objects.filter(gstin=gstin).exists():
-        return Response({'error': 'GSTIN already exists'}, status=status.HTTP_400_BAD_REQUEST)
-    return Response({'message': 'Customer details are unique'}, status=status.HTTP_200_OK)
+        customer = Customer.objects.filter(
+             Q(id=customer_id)|Q(phone_number=phone_number) | Q(email=email) | Q(gstin=gstin)
+        ).first()
 
+        if customer:
+            # logger.info(f"Customer found: {customer.customerName}")
+            return JsonResponse({
+                'customer_id': customer.id,
+                'customer_name': customer.customerName,
+                'phone_number': customer.phone_number
+            }, status=200)
+        else:
+            logger.info(f"Customer not found: {customerName}")
+            return JsonResponse({'message': 'Customer not found'}, status=404)
+    except Exception as e:
+        logger.info(f"Error retrieving customer details: {str(e)}")
+        return JsonResponse({'message': f'Error retrieving customer details: {str(e)}'}, status=400)
+    
 @api_view(['GET'])
 def customer_id_list(request):
-    customers = Customer.objects.values('id', 'customerName', 'phone_number')
-    return Response(customers, status=status.HTTP_200_OK)
+    try:
+        customers = Customer.objects.values('id', 'customerName', 'phone_number')
+        return Response(customers, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.info(f"Error retrieving customer IDs: {str(e)}")
+        return JsonResponse({'message': f'Error retrieving customer IDs: {str(e)}'}, status=400)
+
 
 @api_view(['POST'])
 def check_product_details(request):
@@ -113,24 +128,91 @@ def customer_detail(request, pk):
     return Response(serializer.data)
 
 @api_view(['POST'])
-def create_product(request):
-    data = request.data.copy()
-    user_id = data.pop('user_id', None)
-    
-    if user_id is None:
-        return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+def create_invoice(request):
     try:
-        customer = Customer.objects.get(id=user_id)
+        data = request.data
+        customer_id = data['customer_id']
+        customer = Customer.objects.get(id=customer_id)
+
+        invoice = Invoice.objects.create(
+            customer=customer,
+            invoice_number=data['invoice_number'],
+            invoice_date=data['invoice_date']
+        )
+        logger.info(f"Invoice created successfully: {invoice.invoice_number}")
+        return Response({
+            'message': 'Invoice created successfully',
+            'invoice': {
+                'id': invoice.id,
+                'invoice_number': invoice.invoice_number,
+                'invoice_date': invoice.invoice_date,
+                'customer_id': invoice.customer.id
+            }
+        }, status=status.HTTP_201_CREATED)
     except Customer.DoesNotExist:
-        return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    data['user'] = customer.id
-    serializer = ProductSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.error(f"Customer not found: {customer_id} does not exist")
+        return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error creating invoice: {str(e)}")
+        return Response({'message': f'Error creating invoice: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def add_product_to_invoice(request):
+    try:
+        data = request.data
+        invoice_id = data['invoice_id']
+        invoice = Invoice.objects.get(id=invoice_id)
+
+        product = Product.objects.create(
+            invoice=invoice,
+            product_name=data['product_name'],
+            product_quantity=data['product_quantity'],
+            product_price=data['product_price'],
+            total_amount=data['total_amount']
+        )
+        logger.info(f"Product added successfully: {product.product_name}")
+        return Response({
+            'message': 'Product added successfully',
+            'product': {
+                'id': product.id,
+                'product_name': product.product_name,
+                'product_quantity': product.product_quantity,
+                'product_price': product.product_price,
+                'total_amount': product.total_amount,
+                'invoice_id': product.invoice.id
+            }
+        }, status=status.HTTP_201_CREATED)
+    except Invoice.DoesNotExist:
+        logger.error(f"Invoice not found: {invoice_id} does not exist")
+        return Response({'message': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error adding product: {str(e)}")
+        return Response({'message': f'Error adding product: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_products_by_invoice(request):
+    try:
+        invoice_id = request.GET.get('invoice_id')
+        invoice = Invoice.objects.get(id=invoice_id)
+        products = Product.objects.filter(invoice=invoice)
+
+        product_list = [{
+            'id': product.id,
+            'product_name': product.product_name,
+            'product_quantity': product.product_quantity,
+            'product_price': product.product_price,
+            'total_amount': product.total_amount
+        } for product in products]
+
+        return Response(product_list, status=status.HTTP_200_OK)
+    except Invoice.DoesNotExist:
+        logger.error(f"Invoice not found: {invoice_id} does not exist")
+        return Response({'message': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error retrieving products: {str(e)}")
+        return Response({'message': f'Error retrieving products: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 # ATTEMPT_3!!!!!!!!!!!!!!!
@@ -138,281 +220,481 @@ def create_product(request):
 import logging
 logger = logging.getLogger(__name__)
 
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework import status
+import logging
+
+# Import all required models
+from .models import Customer, Product, Invoice, InvoiceProducts
+# Or if models are in different app:
+# from your_app_name.models import Customer, Product, Invoice, InvoiceProducts
+
+logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
-def create_product2(request):
-    # Log the entire incoming payload
-    logger.info(f"Received Payload: {request.data}")
-    
-    # Print to console for immediate visibility
-    print("Full Payload:", request.data)
-    
-    # Extract user_id explicitly
-    user_id = request.data.get('user_id')
-    print("Arjun hey")
-    print(f"Extracted User ID: {user_id}")
-    print(f"User ID Type: {type(user_id)}")
+def create_product(request):
+    try:
+        data = request.data
+        customer_id = data.get('customer_id')
 
-    if user_id is None:
-        return Response(
-            {"user_id": ["I AM HERE"]}, 
-            status=status.HTTP_400_BAD_REQUEST
+        if not customer_id:
+            logger.error("customer_id is required")
+            return JsonResponse({'message': 'customer_id is required'}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+
+        # Get customer
+        customer = Customer.objects.get(id=customer_id)
+
+        # Create product with only necessary fields
+        product = Product.objects.create(
+            customer=customer,
+            product_name=data['product_name'],
+            product_quantity=data['product_quantity'],
+            product_price=data['product_price'],
+            total_amount=data['total_amount']
         )
 
-    try:
-        # Convert to integer
-        user_id = int(user_id)
-    except (ValueError, TypeError):
-        return Response(
-            {"user_id": ["Invalid user ID format."]}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        logger.info(f"Product added successfully: {product.product_name}")
+        return JsonResponse({
+            'message': 'Product added successfully',
+            'product': {
+                'id': product.id,
+                'product_name': product.product_name,
+                'product_price': str(product.product_price),
+                'product_quantity': product.product_quantity,
+                'total_amount': str(product.total_amount),
+                'customer_id': customer.id
+            }
+        }, status=status.HTTP_201_CREATED)
 
-    # Verify customer exists
-    try:
-        customer = Customer.objects.get(id=user_id)
     except Customer.DoesNotExist:
-        return Response(
-            {"user_id": ["Customer not found."]}, 
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    # Prepare product data
-    product_data = request.data.copy()
-    product_data['user_id'] = user_id
-
-    # Validate and save
-    serializer = ProductSerializer(data=product_data)
-    
-    if serializer.is_valid():
-        try:
-            product = serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({
-                'error': 'An unexpected error occurred',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    # If serialization fails, return errors
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # try:
-    #     # Verify customer exists
-    #     try:
-    #         customer = Customer.objects.get(id=user_id)
-    #         print(f"Customer Found: {customer}")
-    #     except Customer.DoesNotExist:
-    #         print(f"No Customer found with ID: {user_id}")
-    #         return Response({
-    #             'error': 'Customer not found', 
-    #             'user_id': user_id
-    #         }, status=status.HTTP_404_NOT_FOUND)
-
-    #     # Prepare product data
-    #     product_data = {
-    #         'user': customer.id,  # Explicitly set user
-    #         'invoice_number': request.data.get('invoice_number'),
-    #         'invoice_date': request.data.get('invoice_date'),
-    #         'product_name': request.data.get('product_name'),
-    #         'product_price': request.data.get('product_price'),
-    #         'product_quantity': request.data.get('product_quantity'),
-    #         'total_amount': request.data.get('total_amount')
-    #     }
-
-    #     print("Prepared Product Data:", product_data)
-
-    #     # Validate and save
-    #     serializer = ProductSerializer(data=product_data)
-        
-    #     if serializer.is_valid():
-    #         try:
-    #             print("Serializer is Valid")
-    #             product = serializer.save()
-    #             print(f"Product Created: {product}")
-    #             return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #         except Exception as e:
-    #             print(f"Unexpected Error during save: {str(e)}")
-    #             return Response({
-    #                 'error': 'An unexpected error occurred during product creation',
-    #                 'details': str(e)
-    #             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    #     else:
-    #         # Log serializer errors
-    #         print("Serializer Errors:", serializer.errors)
-    #         logger.error(f"Serializer Validation Errors: {serializer.errors}")
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # except Exception as e:
-    #     print(f"Unexpected Error in create_product2: {str(e)}")
-    #     logger.error(f"Unexpected Error in create_product2: {str(e)}")
-    #     return Response({
-    #         'error': 'An unexpected error occurred',
-    #         'details': str(e)
-    #     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# ATTEMPT_2!!!!!!!!!!!!!!!
-# @api_view(['POST'])
-# def create_product2(request):
-#     data = request.data.copy()
-    
-#     # Extract user_id
-#     user_id = data.get('user_id')
-    
-#     print(f"Received User ID: {user_id}")
-    
-#     # Validate user_id
-#     if not user_id:
-#         return Response({'user_id': ['This field is required.']}, status=status.HTTP_400_BAD_REQUEST)
-    
-#     try:
-#         # Fetch the customer
-#         customer = Customer.objects.get(id=user_id)
-#     except Customer.DoesNotExist:
-#         return Response({'user_id': ['Customer not found.']}, status=status.HTTP_404_NOT_FOUND)
-
-#     # Prepare data for serialization
-#     product_data = {
-#         'invoice_number': data.get('invoice_number'),
-#         'invoice_date': data.get('invoice_date'),
-#         'product_name': data.get('product_name'),
-#         'product_price': data.get('product_price'),
-#         'product_quantity': data.get('product_quantity'),
-#         'total_amount': data.get('total_amount'),
-#         'user': customer.id  # Explicitly set the user field
-#     }
-    
-#     serializer = ProductSerializer(data=product_data)
-    
-#     if serializer.is_valid():
-#         try:
-#             # Save the product with the customer
-#             product = serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         except IntegrityError as e:
-#             return Response({'error': 'Duplicate invoice number'}, status=status.HTTP_400_BAD_REQUEST)
-    
-#     # If serializer is not valid, return errors
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# ATTEMPT_1!!!!!!!!!!!!!!!
-
-# @api_view(['POST'])
-# def create_product2(request):
-#     data = request.data.copy()
-#     user_id = data.pop('user_id', None)
-
-#     print(f"Received User ID: {user_id}")
-    
-#     # Validate user_id
-#     if user_id is None:
-#         return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-#     try:
-#         # Fetch the customer
-#         customer = Customer.objects.get(id=user_id)
-#     except Customer.DoesNotExist:
-#         return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#     # Add the customer to the data for serialization
-#     data['user'] = customer.id  # Important: set the foreign key
-    
-#     serializer = ProductSerializer(data=data)
-    
-#     if serializer.is_valid():
-#         try:
-#             # Save the product with the customer
-#             product = serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         except IntegrityError as e:
-#             return Response({'error': 'Duplicate invoice number'}, status=status.HTTP_400_BAD_REQUEST)
-    
-#     # If serializer is not valid, return errors
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.error(f"Customer not found: {customer_id}")
+        return JsonResponse({'message': 'Customer not found'}, 
+                          status=status.HTTP_404_NOT_FOUND)
+    except KeyError as e:
+        logger.error(f"Missing required field: {str(e)}")
+        return JsonResponse({'message': f'Missing required field: {str(e)}'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"Error adding product: {str(e)}")
+        return JsonResponse({'message': f'Error adding product: {str(e)}'}, 
+                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def get_products_by_user(request):
-    user_id = request.query_params.get('user_id')
-    if not user_id:
-        return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
+        user_id = request.GET.get('user_id')
+        invoice_number = request.GET.get('invoice_number')
+        logger.debug(f"Received user_id: {user_id}, invoice_number: {invoice_number}")
+        
+        if not user_id:
+            logger.error("user_id parameter is missing")
+            return Response({'message': 'user_id parameter is missing'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        # Get customer
         customer = Customer.objects.get(id=user_id)
+        
+        # Check if an invoice already exists with this invoice number and is saved
+        if invoice_number:
+            saved_invoice = Invoice.objects.filter(
+                customer=customer,
+                invoice_number=invoice_number,
+                is_saved=True
+            ).exists()
+            
+            if saved_invoice:
+                logger.info(f"Saved invoice already exists for customer {user_id} with number {invoice_number}")
+                return Response([], status=status.HTTP_200_OK)
+        
+        # Get products for this customer that are not part of any saved invoice
+        # First, find products in saved invoices
+        saved_product_ids = InvoiceProducts.objects.filter(
+            invoice__customer=customer,
+            invoice__is_saved=True
+        ).values_list('products_id', flat=True).distinct()
+        
+        # Then, get all products for this customer excluding those in saved invoices
+        products = Product.objects.filter(
+            customer=customer
+        ).exclude(
+            id__in=saved_product_ids
+        )
+        
+        # Build product list
+        product_list = [{
+            'id': product.id,
+            'product_name': product.product_name,
+            'product_quantity': product.product_quantity,
+            'product_price': str(product.product_price),
+            'total_amount': str(product.total_amount)
+        } for product in products]
+
+        return Response(product_list, status=status.HTTP_200_OK)
+    
     except Customer.DoesNotExist:
-        return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+        logger.error(f"Customer not found: {user_id} does not exist")
+        return Response({'message': 'Customer not found'}, 
+                       status=status.HTTP_404_NOT_FOUND)
     
-    products = Product.objects.filter(user=customer)
-    serializer = ProductSerializer(products, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error retrieving products: {str(e)}")
+        return Response({'message': f'Error retrieving products: {str(e)}'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# @api_view(['GET'])
+# def get_products_by_user(request):
+#     try:
+#         user_id = request.GET.get('user_id')
+#         invoice_number = request.GET.get('invoice_number')  # Get the current invoice number
+#         logger.debug(f"Received customer_id: {user_id}, invoice_number: {invoice_number}")
+        
+#         if not user_id:
+#             logger.error("customer_id parameter is missing")
+#             return Response({'message': 'customer_id parameter is missing'}, 
+#                           status=status.HTTP_400_BAD_REQUEST)
 
-# class CustomerIDListView(APIView):  # Use APIView
-#     def get(self, request):
-#         customers = Customer.objects.values( 'customerName', 'phone_number')
-#         return Response(customers, status=status.HTTP_200_OK)
+#         # Get customer
+#         customer = Customer.objects.get(id=user_id)
+        
+#         # Get all products for this customer
+#         products = Product.objects.filter(customer=customer)
+        
+#         # Filter out products that are already in a saved invoice (if we know invoice IDs are stored)
+#         # This assumes you have some way to know which products are in saved invoices
+#         # For example, if you have an InvoiceProducts model or similar that tracks this
+        
+#         # Get IDs of products that are already in saved invoices (except current one)
+        
+#         saved_product_ids = []
+        
+#         # If you have a table that links products to invoices (adjust as needed for your schema)
+#         if hasattr(models, 'InvoiceProducts'):  # Check if the model exists
+#             saved_product_ids = models.InvoiceProducts.objects.exclude(
+#                 invoice__invoice_number=invoice_number  # Exclude current invoice
+#             ).filter(
+#                 product__customer=customer  # Only this customer's products
+#             ).values_list('product_id', flat=True)
+        
+#         # Filter products to exclude those that are already saved
+#         unsaved_products = products.exclude(id__in=saved_product_ids)
+        
+#         # Build product list with only product details
+#         product_list = [{
+#             'id': product.id,
+#             'product_name': product.product_name,
+#             'product_quantity': product.product_quantity,
+#             'product_price': str(product.product_price),  # Convert Decimal to string for JSON
+#             'total_amount': str(product.total_amount)    # Convert Decimal to string for JSON
+#         } for product in unsaved_products]
 
-@api_view(['GET'])
-def get_customer_by_name(request):
-    name = request.query_params.get('name')
-    if not name:
-        return Response({'error': 'Name parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response(product_list, status=status.HTTP_200_OK)
     
+#     except Customer.DoesNotExist:
+#         logger.error(f"Customer not found: {user_id} does not exist")
+#         return Response({'message': 'Customer not found'}, 
+#                        status=status.HTTP_404_NOT_FOUND)
+    
+#     except Exception as e:
+#         logger.error(f"Error retrieving products: {str(e)}")
+#         return Response({'message': f'Error retrieving products: {str(e)}'}, 
+#                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# working API
+# @api_view(['GET'])
+# def get_products_by_user(request):
+#     try:
+#         user_id = request.GET.get('user_id')
+#         logger.debug(f"Received customer_id: {user_id}")
+        
+#         if not user_id:
+#             logger.error("customer_id parameter is missing")
+#             return Response({'message': 'customer_id parameter is missing'}, 
+#                           status=status.HTTP_400_BAD_REQUEST)
+
+#         # Get customer and their products
+#         customer = Customer.objects.get(id=user_id)
+#         products = Product.objects.filter(customer=customer)
+        
+#         # Build product list with only product details
+#         product_list = [{
+#             'id': product.id,
+#             'product_name': product.product_name,
+#             'product_quantity': product.product_quantity,
+#             'product_price': str(product.product_price),  # Convert Decimal to string for JSON
+#             'total_amount': str(product.total_amount)    # Convert Decimal to string for JSON
+#         } for product in products]
+
+#         return Response(product_list, status=status.HTTP_200_OK)
+    
+#     except Customer.DoesNotExist:
+#         logger.error(f"Customer not found: {user_id} does not exist")
+#         return Response({'message': 'Customer not found'}, 
+#                        status=status.HTTP_404_NOT_FOUND)
+    
+#     except Exception as e:
+#         logger.error(f"Error retrieving products: {str(e)}")
+#         return Response({'message': f'Error retrieving products: {str(e)}'}, 
+#                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+logger = logging.getLogger(__name__)
+
+@api_view(['DELETE'])
+def delete_product(request, product_id):
     try:
-        customer = Customer.objects.get(customerName=name)
-        serializer = CustomerSerializer(customer)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except Customer.DoesNotExist:
-        return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Get and delete the product directly
+        product = Product.objects.get(id=product_id)
+        product.delete()
+        
+        return JsonResponse({
+            'message': 'Product deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Product.DoesNotExist:
+        logger.error(f"Product not found: {product_id}")
+        return JsonResponse({
+            'message': 'Product not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+        
+    except Exception as e:
+        logger.error(f"Error deleting product: {str(e)}")
+        return JsonResponse({
+            'message': f'Error deleting product: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+# Working API
+
+# @api_view(['POST'])
+# def save_summary(request):
+#     try:
+#         # Get all data from request
+#         customer_id = request.data.get('customer_id')
+#         total_products = request.data.get('total_products')
+#         total_amount = request.data.get('total_amount')
+#         invoice_number = request.data.get('invoice_number')  # Get from request
+#         invoice_date = request.data.get('invoice_date')      # Get from request
+
+#         # Validate required fields
+#         if not all([customer_id, invoice_number, invoice_date]):
+#             return Response({
+#                 'error': 'Customer ID, invoice number and date are required'
+#             }, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Get customer
+#         customer = Customer.objects.get(id=customer_id)
+
+#         # Create invoice with the provided details
+#         invoice = Invoice.objects.create(
+#             customer=customer,
+#             invoice_number=invoice_number,
+#             invoice_date=invoice_date,
+#             is_saved=True
+#         )
+
+#         # Create summary
+#         summary = Summary.objects.create(
+#             user=customer,
+#             total_products=total_products,
+#             total_amount=total_amount
+#         )
+
+#         return Response({
+#             'message': 'Summary saved successfully',
+#             'invoice_number': invoice.invoice_number,
+#             'invoice_date': invoice.invoice_date
+#         }, status=status.HTTP_201_CREATED)
+
+#     except Customer.DoesNotExist:
+#         return Response({
+#             'error': 'Customer not found'
+#         }, status=status.HTTP_404_NOT_FOUND)
+#     except Exception as e:
+#         return Response({
+#             'error': f'Error saving summary: {str(e)}'
+#         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 @api_view(['POST'])
 def save_summary(request):
-    if request.method == 'POST':
-        customer_id = request.data.get('customer_id')
-        total_products = request.data.get('total_products')
-        total_amount = request.data.get('total_amount')
+    try:
+        # Extract data from request
+        data = request.data
+        customer_id = data.get('customer_id')
+        total_products = data.get('total_products')
+        total_amount = data.get('total_amount')
+        invoice_number = data.get('invoice_number')
+        invoice_date = data.get('invoice_date')
+        
+        # Validate required fields
+        if not customer_id or not invoice_number or not invoice_date:
+            return Response({"error": "Customer ID, invoice number and date are required"}, 
+                           status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get customer
+        customer = Customer.objects.get(id=customer_id)
+        
+        # Get or create invoice
+        invoice, created = Invoice.objects.get_or_create(
+            customer=customer,
+            invoice_number=invoice_number,
+            defaults={'invoice_date': invoice_date}
+        )
+        
+        # Create a new summary record (instead of get_or_create)
+        summary = Summary.objects.create(
+            user=customer,
+            total_products=total_products,
+            total_amount=total_amount
+        )
+        
+        # Get all products for this customer that are not in any saved invoice
+        saved_product_ids = InvoiceProducts.objects.filter(
+            invoice__customer=customer,
+            invoice__is_saved=True
+        ).values_list('products_id', flat=True).distinct()
+        
+        unsaved_products = Product.objects.filter(
+            customer=customer
+        ).exclude(
+            id__in=saved_product_ids
+        )
+        
+        # Add these products to the invoice
+        for product in unsaved_products:
+            InvoiceProducts.objects.create(
+                invoice=invoice,
+                products=product,
+                quantity=product.product_quantity,
+                price=product.product_price
+            )
+        
+        # Mark the invoice as saved
+        invoice.is_saved = True
+        invoice.save()
+        
+        # Return success response
+        return Response({
+            "message": "Summary saved successfully",
+            "summary_id": summary.id,
+            "invoice_id": invoice.id
+        }, status=status.HTTP_201_CREATED)
+        
+    except Customer.DoesNotExist:
+        return Response({"error": "Customer not found"}, 
+                       status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        logger.error(f"Error saving summary: {str(e)}")
+        return Response({"error": f"Failed to save summary: {str(e)}"}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Check if the customer exists
-        try:
-            customer = Customer.objects.get(id=customer_id)
-        except Customer.DoesNotExist:
-            return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Create the Summary object
-        try:
-            summary = Summary.objects.get(user=customer)
-            # Update the existing Summary object
-            summary.total_products = total_products
-            summary.total_amount = total_amount
-            summary.save()
-            return Response({'message': 'Summary updated successfully'}, status=status.HTTP_200_OK)
-        except Summary.DoesNotExist:
-            # Create a new Summary object
-            summary = Summary(user=customer, total_products=total_products, total_amount=total_amount)
-            summary.save()
-            return Response({'message': 'Summary saved successfully'}, status=status.HTTP_201_CREATED)
-    return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
-
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 def get_bills(request):
     try:
-        products = Product.objects.all()
+        # Get all summaries with their related customer information
+        summaries = Summary.objects.select_related('user').all()
         
         bills = []
-        for product in products:
-            customer = product.user
-            summary = Summary.objects.filter(user_id=customer.id).first()
-            if summary:
-                bills.append({
-                    'invoice_number': product.invoice_number,
-                    'invoice_date': product.invoice_date,
-                    'customer_name': customer.customerName,
-                    'total_amount': summary.total_amount,
-                })
+        for summary in summaries:
+            try:
+                # Get the saved invoices for this customer
+                # We're filtering for is_saved=True to only get completed invoices
+                invoices = Invoice.objects.filter(
+                    customer=summary.user,
+                    is_saved=True
+                ).order_by('-invoice_date')  # Get most recent first
+                
+                # For each invoice, create a bill entry
+                for invoice in invoices:
+                    # Get the products in this invoice
+                    invoice_products = InvoiceProducts.objects.filter(invoice=invoice)
+                    
+                    # Calculate totals for this specific invoice
+                    total_products_count = invoice_products.count()
+                    total_amount = sum(ip.price * ip.quantity for ip in invoice_products)
+                    
+                    bills.append({
+                        'id': invoice.id,
+                        'invoice_number': invoice.invoice_number,
+                        'invoice_date': invoice.invoice_date,
+                        'customer_name': summary.user.customerName,
+                        'customer_id': summary.user.id,
+                        'total_amount': total_amount,
+                        'total_products': total_products_count,
+                        'summary_id': summary.id
+                    })
+            except Exception as e:
+                logger.error(f"Error processing summary for customer {summary.user.customerName}: {str(e)}")
+                continue
 
-        return Response(bills, status=status.HTTP_200_OK)
+        if not bills:
+            return Response({
+                'message': 'No bills found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Remove potential duplicates based on invoice_number
+        unique_bills = {}
+        for bill in bills:
+            invoice_number = bill['invoice_number']
+            if invoice_number not in unique_bills:
+                unique_bills[invoice_number] = bill
+        
+        # Return as a list
+        result = list(unique_bills.values())
+        
+        # Sort by invoice date (most recent first)
+        result.sort(key=lambda x: x['invoice_date'], reverse=True)
+
+        return Response(result, status=status.HTTP_200_OK)
+
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+        logger.error(f"Error fetching bills: {str(e)}")
+        return Response({
+            'error': f'Error fetching bills: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# WORKING API
+
+# @api_view(['GET'])
+# def get_bills(request):
+#     try:
+#         # First, get all summaries with their related customer information
+#         summaries = Summary.objects.select_related('user').all()
+        
+#         bills = []
+#         for summary in summaries:
+#             try:
+#                 # Get the invoice for this customer
+#                 invoice = Invoice.objects.filter(customer=summary.user).first()
+                
+#                 if invoice:
+#                     bills.append({
+#                         'invoice_number': invoice.invoice_number,
+#                         'invoice_date': invoice.invoice_date,
+#                         'customer_name': summary.user.customerName,
+#                         'total_amount': summary.total_amount,
+#                         'total_products': summary.total_products
+#                     })
+#             except Exception as e:
+#                 logger.error(f"Error processing summary for customer {summary.user.customerName}: {str(e)}")
+#                 continue
+
+#         if not bills:
+#             return Response({
+#                 'message': 'No bills found'
+#             }, status=status.HTTP_404_NOT_FOUND)
+
+#         return Response(bills, status=status.HTTP_200_OK)
+
+#     except Exception as e:
+#         logger.error(f"Error fetching bills: {str(e)}")
+#         return Response({
+#             'error': 'Error fetching bills'
+#         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer

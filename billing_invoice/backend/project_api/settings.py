@@ -82,9 +82,9 @@ WSGI_APPLICATION = 'project_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Billing_Invoice',
+        'NAME': 'sn_tech',
         'USER': 'postgres',
-        'PASSWORD': 'admin',
+        'PASSWORD': '123',
         'HOST': 'localhost',
         'PORT': '5432',
     }

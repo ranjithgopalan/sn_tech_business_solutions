@@ -48,3 +48,16 @@ DETAIL:  Key (gstin)=(12435267) already exists.
 2025-02-17 14:06:36 - INFO - Customer already exists: Dr. Ranjith Gopalan
 2025-02-17 14:06:51 - INFO - Customer already exists: Dr. Ranjith Gopalan
 2025-02-17 14:08:15 - INFO - C:\Git\ArjunSatheesh_Projects\sn_tech_business_solutions\billing_invoice\backend\project_api\urls.py changed, reloading.
+2025-02-24 12:08:12 - INFO - Customer added successfully: Arun
+2025-02-24 12:08:48 - ERROR - customer_id is required
+2025-02-24 12:08:48 - WARNING - Bad Request: /api/create-product/
+2025-02-24 12:10:23 - INFO - D:\git\sn_tech2\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-02-27 12:18:34 - INFO - Customer added successfully: varun
+2025-02-27 12:22:31 - INFO - Product added successfully: closet
+2025-02-27 12:43:52 - INFO - D:\git\sn_tech2\billing_invoice\backend\app_api_customer\views.py changed, reloading.
+2025-03-01 11:45:57 - INFO - Customer already exists: vishnu
+2025-03-01 11:46:38 - INFO - Customer already exists: sarun
+2025-03-01 11:47:12 - INFO - Customer added successfully: sarun
+2025-03-01 11:48:20 - INFO - Product added successfully: soap
+2025-03-01 11:48:35 - INFO - Product added successfully: pen
+2025-03-01 11:49:41 - INFO - Product added successfully: bottle

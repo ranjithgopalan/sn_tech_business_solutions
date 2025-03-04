@@ -1,0 +1,18 @@
+.bills-query-container {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 14px;
+    }
+    
+    th, td {
+        padding: 8px 10px;
+    }
+}
